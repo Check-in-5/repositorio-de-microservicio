@@ -86,7 +86,7 @@ Este Compose levanta **Check-in y MySQL**, no toda la plataforma. El Compose ra�
 
 ### Entradas
 
-Configurar CHECKIN_SERVICE_URL=http://checkin-service:3000 en la red Docker. El POST requiere Content-Type: application/json y el cuerpo del contrato; no requiere API key. Su timeout actual es de 0.5 s: sigue pendiente acordar reintentos ante errores transitorios.
+Configurar CHECKIN_SERVICE_URL=http://checkin-service:3005 en la red Docker. El POST requiere Content-Type: application/json y el cuerpo del contrato; no requiere API key. Su timeout actual es de 0.5 s: sigue pendiente acordar reintentos ante errores transitorios.
 
 ### Reseñas
 
@@ -108,10 +108,10 @@ Se detectó además que crearResena usa `eventoCatalogo.fecha` sin definir event
 Fuente: https://github.com/FWizav/backendticketU (README, api-gateway/.env.example y Compose de Gateway/Broker).
 
 - Red externa: `plataforma-eventos-net`; servicio estable: `checkin-service`.
-- Check-in en Docker escucha en 3000; Compose publica `3005:3000` por defecto. PORT en el .env elige el puerto del host. La ejecución nativa con npm conserva PORT=3005.
-- Gateway público: localhost:8080. Su CHECKIN_SERVICE_URL debe ser http://checkin-service:3000.
+- Check-in en Docker escucha en 3005; Compose publica `3005:3005` por defecto. PORT en el .env elige el puerto del host. La ejecución nativa con npm conserva PORT=3005.
+- Gateway público: localhost:8080. Su CHECKIN_SERVICE_URL debe ser http://checkin-service:3005.
 - El prefijo público de Check-in es /api/checkin; el Gateway no reescribe rutas ni publica nuestros alias /api/v1/checkin o /checkin.
-- Entradas y Reseñas deben dirigirse a http://checkin-service:3000 en la red Docker. Si acceden desde Windows: http://localhost:3005. El frontend de TITEC solo cambia su CHECKIN_SERVICE_URL si se conecta directamente a esta nueva instancia; TITEC no se modificó.
+- Entradas y Reseñas deben dirigirse a http://checkin-service:3005 en la red Docker. Si acceden desde Windows: http://localhost:3005. El frontend de TITEC solo cambia su CHECKIN_SERVICE_URL si se conecta directamente a esta nueva instancia; TITEC no se modificó.
 - Entradas: http://entradas-service:3000. Panel: http://organizador-service:3000 cuando ese nombre exista en la red compartida.
 - RabbitMQ: ticketu-rabbitmq:5672; administración localhost:15672. Exchange ticketu.events.
 - La plantilla del Gateway supone todos los backends en 3000. Auth real escucha en 10000: configurar AUTH_SERVICE_URL=http://auth-service:10000 en el Gateway y Check-in cuando Auth tenga ese nombre en la red. No cambiar el puerto real de Auth basándose solo en la plantilla.

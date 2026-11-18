@@ -14,7 +14,7 @@ La API requiere Auth y su clave de introspección. El registro de tickets, la co
 Ejemplo de URLs internas Docker usadas en TITEC-V2:
 
 - AUTH_SERVICE_URL=http://auth-service:10000
-- CHECKIN_SERVICE_URL=http://checkin-service:3000
+- CHECKIN_SERVICE_URL=http://checkin-service:3005
 - APP_ORIGIN=http://localhost:3000
 
 Los archivos `.env.example` heredados son plantillas de sus proyectos y deben ajustarse al entorno. Para el detalle de contratos, consultar [la documentación del backend](backend/docs/integracion-completa.md).
