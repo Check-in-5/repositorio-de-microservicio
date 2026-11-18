@@ -9,7 +9,7 @@ Esta entrega modifica únicamente el backend Check-in. No reemplaza TITEC, su fr
 |---|---|---|
 | Check-in / feat/Integracion-entradas | 5a7c450 | Se adaptan recepción v2, alias v1, consulta a Entradas y estado de Panel; se conserva Auth y control de ingreso único. |
 | Check-in / back-end-integracion-resena | c3909fa | Se implementa la consulta de asistencia cuyo método MySQL estaba comentado. |
-| Entradas / main | fa38b83204a068f9d3d431a060f78ddf449c8251 | Su productor envía QR como texto y el ID de comprador; su GET básico omite id_evento. Se usa GET /detalle para sincronizar. Falta enviar x-api-key desde Entradas. |
+| Entradas / main | fa38b83204a068f9d3d431a060f78ddf449c8251 | Su productor envía QR como texto y el ID de comprador; su GET básico omite id_evento. Se usa GET /detalle para sincronizar. El registro directo no requiere API key. |
 | Panel / main | aba84eda3813ad5c46a99a86825e7dedb2660f14 | Su GET compartido exige cookie jwt y rol staff/organizador. Check-in reenvía la cookie STAFF después de validarla en Auth. |
 | Reseñas / main | eca3ab1f2ff14b1cadfb5f66c1c4bb7275fc3db4 | Todavía usa asistencia_eventos en PostgreSQL; no llama a Check-in. Sus IDs de usuario son enteros, mientras Auth/Entradas usan UUID. Requiere cambios en el consumidor. |
 
@@ -20,7 +20,7 @@ Repositorios contrastados:
 
 ## Flujo implementado
 
-1. Entradas registra un ticket con `POST /api/checkin/tickets` o `/api/v1/checkin/tickets`, enviando `x-api-key: CHECKIN_SERVICE_API_KEY`.
+1. Entradas registra un ticket con `POST /api/checkin/tickets` o `/api/v1/checkin/tickets`.
 2. El frontend existente de TITEC conserva el login de Auth y reenvía la cookie al validar. Ambas rutas `/api/checkin/validaciones` y `/api/v1/checkin/validaciones` exigen sesión STAFF.
 3. Si el ticket no está localmente, o le falta el ID de comprador, Check-in consulta `GET /api/v1/entradas/{id}/detalle`. Comprueba ID, evento, comprador, nombre y estado EMITIDA. No inventa evento ni identidad. 404, caída y respuesta incompatible son casos distintos.
 4. Check-in consulta `GET /api/v1/panel/eventos/{id}` con la cookie del operador. Solo PUBLICADO permite el ingreso. Devuelve datos del evento bajo `evento`, sin exponer el ID del comprador al escáner.
@@ -45,14 +45,14 @@ Registro compatible:
 
 También se admite `qr_data: "tk-1"` o su ausencia cuando se entrega id_usuario (productor actual de Entradas). Si se omite id_usuario, se exige QR objeto y se almacena temporalmente una cadena vacía: antes de admitir el acceso se debe resolver la identidad desde Entradas. Si no se puede, devuelve error; no registra una asistencia atribuida a un usuario ficticio.
 
-Consulta de Reseñas, protegida con la misma clave de servicio:
+Consulta de Reseñas, sin API key:
 
 - `POST /api/checkin/asistencia` con `{ "eventoId": "...", "usuarioId": "..." }`: responde `{ "asistio": "true" }` o `{ "asistio": "false" }`, compatible con la rama de reseñas.
 - `GET /api/checkin/asistencia?eventoId=...&usuarioId=...`: responde un **booleano** `{ "asistio": true }` o `{ "asistio": false }`, conforme a la propuesta del contrato general de Reseñas.
 - Alias equivalentes: `/api/v1/checkin/asistencia` y `/checkin/asistencia`. POST admite query como alternativa al body.
-- Ausencia de asistencia: 200 con false. Clave inválida: 403. Error de base: 500, nunca false.
+- Ausencia de asistencia: 200 con false. Error de base: 500, nunca false.
 
-Se conserva `POST /api/checkin/eventos/{id}/finalizar`, protegido por clave. Publica `checkin.asistencia_final` en `ticketu.events` con confirmación del broker. No modifica el estado de Panel. No asegura que Reseñas consuma el mensaje, ni entrega exactamente una vez; el consumidor debe tolerar reintentos. El repositorio actual de Reseñas no contiene ese consumidor. Si no hay asistentes, devuelve total cero sin publicar.
+Se conserva `POST /api/checkin/eventos/{id}/finalizar`, sin API key. Publica `checkin.asistencia_final` en `ticketu.events` con confirmación del broker. No modifica el estado de Panel. No asegura que Reseñas consuma el mensaje, ni entrega exactamente una vez; el consumidor debe tolerar reintentos. El repositorio actual de Reseñas no contiene ese consumidor. Si no hay asistentes, devuelve total cero sin publicar.
 
 ## Configuración
 
@@ -86,17 +86,11 @@ Este Compose levanta **Check-in y MySQL**, no toda la plataforma. El Compose ra�
 
 ### Entradas
 
-En `back-end/services/checkin_service.py`, la llamada `client.post` debe incluir:
-
-```python
-headers={"x-api-key": os.environ["CHECKIN_SERVICE_API_KEY"]}
-```
-
-Añadir `CHECKIN_SERVICE_API_KEY` al environment de su servicio Compose y coordinar su valor con Check-in. Su timeout actual es de 0.5 s: conviene acordar reintentos e idempotencia ante errores transitorios, conservando el mismo ID de ticket. No publicar claves en el frontend. Hasta aplicar este ajuste, su registro directo recibirá 403; Check-in puede recuperar el ticket mediante /detalle al escanearlo.
+Configurar CHECKIN_SERVICE_URL=http://checkin-service:3000 en la red Docker. El POST requiere Content-Type: application/json y el cuerpo del contrato; no requiere API key. Su timeout actual es de 0.5 s: sigue pendiente acordar reintentos ante errores transitorios.
 
 ### Reseñas
 
-Su `code/backend/src/services/resenas.service.js` llama a `repositories/asistencia.repo.js`, que consulta una tabla local. Para integración real debe sustituir esa verificación por el GET de Check-in con clave, timeout y validación estricta de `asistio === true`. En error debe impedir publicar y responder 503, sin convertir el error en falta de asistencia.
+Su `code/backend/src/services/resenas.service.js` llama a `repositories/asistencia.repo.js`, que consulta una tabla local. Para integración real debe sustituir esa verificación por el GET de Check-in con timeout y validación estricta de `asistio === true`. En error debe impedir publicar y responder 503, sin convertir el error en falta de asistencia.
 
 Además debe definir una relación persistente entre `usuarios.id` (entero local) y el UUID canónico de Auth, o migrar su modelo a ese UUID. **No convertir el número local a texto esperando que coincida con un UUID, ni inventar correspondencias.** Sus validadores también restringen evento a `evt-*`, mientras Panel emite IDs Mongo como texto. Requiere adaptar validación/identidad en Reseñas, no modificar los IDs reales de Check-in.
 

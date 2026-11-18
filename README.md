@@ -9,7 +9,7 @@ Se conserva el código de esas carpetas. No se incluyen los repositorios externo
 
 ## Configuración de la integración
 
-La API requiere Auth y su clave de introspección. Los productores de tickets y consumidores de asistencia deben usar la clave de servicio de Check-in. El frontend necesita variables de servidor `AUTH_SERVICE_URL`, `CHECKIN_SERVICE_URL`, `APP_ORIGIN` y `CHECKIN_ALLOWED_ROLES=STAFF`, como en el Compose raíz de TITEC-V2; nunca exponer las claves en variables NEXT_PUBLIC.
+La API requiere Auth y su clave de introspección. El registro de tickets, la consulta de asistencia y la finalización de eventos no requieren API key de Check-in. El frontend necesita variables de servidor `AUTH_SERVICE_URL`, `CHECKIN_SERVICE_URL`, `APP_ORIGIN` y `CHECKIN_ALLOWED_ROLES=STAFF`, como en el Compose raíz de TITEC-V2; nunca exponer las claves en variables NEXT_PUBLIC.
 
 Ejemplo de URLs internas Docker usadas en TITEC-V2:
 
@@ -25,7 +25,7 @@ Los archivos `.env.example` heredados son plantillas de sus proyectos y deben aj
 - La asistencia registrada impide el reingreso. No se actualiza `ticket.estado` a USADO.
 - El ingreso manual recibe ID de entrada y evento. El lector QR todavía usa un evento predeterminado si el QR solo contiene el ID: queda pendiente seleccionar el evento de la puerta.
 - Reseñas dispone de una API de asistencia en Check-in; su backend externo aún debe consumirla y coordinar la identidad de usuarios.
-- El entorno local TITEC-V2 incluye un adaptador interno para las cabeceras de servicio que aún no envían Panel y Entradas. Ese adaptador no forma parte de estas dos carpetas.
+- El entorno local TITEC-V2 incluye un adaptador interno para que Panel envíe la clave de introspección exigida por Auth. Entradas se conecta directamente a Check-in. Ese adaptador no forma parte de estas dos carpetas.
 - Publicar estas fuentes no implica que se haya verificado una compra completa ni la creación de reseñas entre todos los servicios.
 
 ## Comandos de desarrollo

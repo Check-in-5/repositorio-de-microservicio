@@ -1,15 +1,4 @@
-import { timingSafeEqual as comparar } from 'node:crypto';
 import { error_api } from './errors.js';
-
-export function autenticar_servicio(solicitud, _respuesta, continuar) {
-  const esperada = process.env.CHECKIN_SERVICE_API_KEY;
-  const recibida = solicitud.get('x-api-key');
-  if (!esperada) return continuar(new error_api(503, 'AUTH_NOT_CONFIGURED', 'Credencial de servicio no configurada.'));
-  if (!recibida || Buffer.byteLength(recibida) !== Buffer.byteLength(esperada) || !comparar(Buffer.from(recibida), Buffer.from(esperada))) {
-    return continuar(new error_api(403, 'SERVICE_FORBIDDEN', 'Servicio no autorizado.'));
-  }
-  continuar();
-}
 
 export async function autenticar_personal(solicitud, _respuesta, continuar) {
   const base = process.env.AUTH_SERVICE_URL;

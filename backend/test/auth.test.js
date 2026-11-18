@@ -18,7 +18,6 @@ test('HTTP: sesión y permisos, caída de Auth y registro entre servicios', asyn
   await new Promise(resolve => auth.listen(0, '127.0.0.1', resolve));
   process.env.AUTH_SERVICE_URL = `http://127.0.0.1:${auth.address().port}`;
   process.env.AUTH_INTERNAL_API_KEY = 'clave-auth-test';
-  process.env.CHECKIN_SERVICE_API_KEY = 'clave-entradas-test';
   process.env.CHECKIN_ALLOWED_ROLES = 'STAFF';
   const app = crear_app({ repositorio: {
     buscar_por_id: async () => { consultas++; return { id_entrada: 'tk-1', id_evento: 'ev-1', id_usuario: 'buyer-1', nombre_usuario: 'Persona' }; },
@@ -40,10 +39,7 @@ test('HTTP: sesión y permisos, caída de Auth y registro entre servicios', asyn
     const valida = await post('/validaciones', { Cookie: 'jwt=prueba' });
     assert.equal(valida.status, 200); assert.equal((await valida.json()).valido, true);
     assert.equal(consultas, 1);
-    assert.equal((await post('/tickets')).status, 403);
-    assert.equal((await post('/eventos/ev-1/finalizar', { Cookie: 'jwt=prueba' })).status, 403);
-    assert.equal((await post('/tickets', { 'x-api-key': 'incorrecta' })).status, 403);
-    assert.equal((await post('/tickets', { 'x-api-key': 'clave-entradas-test' }, { id_entrada: 'tk-2', id_evento: 'ev-1', id_usuario: 'buyer-1', nombre_usuario: 'Persona' })).status, 201);
+    assert.equal((await post('/tickets', {}, { id_entrada: 'tk-2', id_evento: 'ev-1', id_usuario: 'buyer-1', nombre_usuario: 'Persona' })).status, 201);
     await new Promise(resolve => auth.close(resolve));
     assert.equal((await post('/validaciones', { Cookie: 'jwt=prueba' })).status, 503);
   } finally {

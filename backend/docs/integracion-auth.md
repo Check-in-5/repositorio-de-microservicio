@@ -5,14 +5,14 @@ Check-in conserva su base MySQL y sus reglas de negocio. La identidad del operad
 | Ruta | Credencial |
 |---|---|
 | POST /api/checkin/validaciones | Cookie `jwt` de Auth y rol permitido (STAFF por defecto) |
-| POST /api/checkin/tickets | `x-api-key` igual a CHECKIN_SERVICE_API_KEY |
-| POST /api/checkin/eventos/:id_evento/finalizar | `x-api-key` igual a CHECKIN_SERVICE_API_KEY |
+| POST /api/checkin/tickets | Sin API key |
+| POST /api/checkin/eventos/:id_evento/finalizar | Sin API key |
 | GET /health | Pública; comprueba HTTP, no la disponibilidad de Auth |
 
 El middleware reenvía Cookie y AUTH_INTERNAL_API_KEY en `x-api-key` a `GET AUTH_SERVICE_URL/internal/validar-sesion`. Acepta el rol `staff` del contrato de Auth y normaliza la configuración de roles a minúsculas. No confía en roles ni identidades del cuerpo de la petición.
 
 - 401: sesión ausente, inválida, vencida o revocada.
-- 403: sesión con rol no permitido, o clave de servicio incorrecta.
+- 403: sesión con rol no permitido.
 - 503: configuración incompleta, fallo de red, respuesta inesperada o error de Auth. No se ejecuta la operación protegida.
 
 ## Configuración
@@ -27,7 +27,7 @@ CHECKIN_SERVICE_API_KEY=
 CHECKIN_ALLOWED_ROLES=STAFF
 ```
 
-AUTH_INTERNAL_API_KEY debe coincidir con INTERNAL_API_KEY del backend Auth. CHECKIN_SERVICE_API_KEY es otra clave, compartida únicamente con los servicios autorizados a registrar tickets o finalizar eventos. No incluir claves en el navegador ni subir `.env` a Git.
+AUTH_INTERNAL_API_KEY debe coincidir con INTERNAL_API_KEY del backend Auth. Check-in no exige API key en los endpoints entre servicios. No incluir claves en el navegador ni subir `.env` a Git.
 
 La URL de ejemplo corresponde a Docker Desktop con Auth publicado en el puerto 10000 del host. Si ambos servicios están en la misma red Docker, usa el nombre real de Auth en esa red. Si Check-in se ejecuta con npm en Windows y Auth está publicado localmente, usa `http://localhost:10000`.
 

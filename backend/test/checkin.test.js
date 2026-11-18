@@ -11,7 +11,7 @@ const entrada = { id_entrada: 'tk-998877', id_evento: 'evt-77889', nombre_usuari
 const registro = { ...entrada, id_usuario: 'usr-42' };
 const lectura = { id_entrada: entrada.id_entrada, id_evento: entrada.id_evento };
 async function iniciar_servidor(contexto, repositorio = crear_repositorio(':memory:'), cerrar = true) {
-  const servidor = crear_app({ repositorio, verificar_personal: (_req, _res, next) => next(), verificar_servicio: (_req, _res, next) => next() }).listen(0, '127.0.0.1');
+  const servidor = crear_app({ repositorio, verificar_personal: (_req, _res, next) => next() }).listen(0, '127.0.0.1');
   await esperar_evento(servidor, 'listening');
   contexto.after(async () => {
     await new Promise(resolver => { servidor.close(resolver); servidor.closeAllConnections(); });

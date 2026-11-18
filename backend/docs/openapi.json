@@ -170,12 +170,6 @@
               }
             }
           },
-          "401": {
-            "description": "Sesión inválida"
-          },
-          "403": {
-            "description": "Sin permiso"
-          },
           "409": {
             "description": "TICKET_ALREADY_EXISTS: el ID ya está registrado; no se modifica",
             "content": {
@@ -273,11 +267,7 @@
             "description": "Proveedor no disponible o configuración incompleta"
           }
         },
-        "security": [
-          {
-            "servicio": []
-          }
-        ]
+        "security": []
       }
     },
     "/api/checkin/validaciones": {
@@ -547,21 +537,11 @@
               }
             }
           },
-          "401": {
-            "description": "Sesión inválida"
-          },
-          "403": {
-            "description": "Sin permiso"
-          },
           "503": {
             "description": "Broker sin configurar o publicación no confirmada"
           }
         },
-        "security": [
-          {
-            "servicio": []
-          }
-        ]
+        "security": []
       }
     },
     "/api/v1/checkin/tickets": {
@@ -573,11 +553,7 @@
     "/api/checkin/asistencia": {
       "get": {
         "summary": "Consultar asistencia confirmada de comprador y evento",
-        "security": [
-          {
-            "servicio": []
-          }
-        ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Asistencia presente o ausente",
@@ -600,14 +576,8 @@
           "400": {
             "description": "Identificadores inválidos"
           },
-          "403": {
-            "description": "Clave de servicio incorrecta"
-          },
           "500": {
             "description": "Error de almacenamiento"
-          },
-          "503": {
-            "description": "Clave de servicio no configurada"
           }
         },
         "description": "Contrato booleano para nuevos consumidores.",
@@ -636,11 +606,7 @@
       },
       "post": {
         "summary": "Consultar asistencia confirmada de comprador y evento",
-        "security": [
-          {
-            "servicio": []
-          }
-        ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Asistencia presente o ausente",
@@ -667,14 +633,8 @@
           "400": {
             "description": "Identificadores inválidos"
           },
-          "403": {
-            "description": "Clave de servicio incorrecta"
-          },
           "500": {
             "description": "Error de almacenamiento"
-          },
-          "503": {
-            "description": "Clave de servicio no configurada"
           }
         },
         "description": "Compatibilidad: asistio es la cadena true o false. El body tiene precedencia sobre query.",
@@ -737,11 +697,6 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "jwt"
-      },
-      "servicio": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "x-api-key"
       }
     }
   }

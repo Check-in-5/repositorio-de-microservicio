@@ -1,6 +1,6 @@
 > Rama de integración de Auth, Entradas, Panel y Reseñas: consulta [estado, configuración y pendientes](docs/integracion-completa.md). La documentación histórica siguiente no describe todos los contratos actuales.
 
-> Esta rama integra Auth: las validaciones requieren cookie de sesión y rol STAFF; registrar tickets y finalizar eventos requiere una clave entre servicios. Consulta [la guía de integración y arranque](docs/integracion-auth.md). Las instrucciones históricas sin autenticación que siguen corresponden a la entrega anterior.
+> Esta rama integra Auth: las validaciones requieren cookie de sesión y rol STAFF; registrar tickets, consultar asistencia y finalizar eventos no requieren API key. Consulta [la guía de integración y arranque](docs/integracion-auth.md). Las instrucciones históricas sin autenticación que siguen corresponden a la entrega anterior.
 
 # TicketU — Microservicio Check-in
 

@@ -30,7 +30,7 @@ test('integración HTTP: Auth, Entradas, Panel y contrato de asistencia para Res
   });
   await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${upstream.address().port}`;
-  Object.assign(process.env, { AUTH_SERVICE_URL: base, AUTH_INTERNAL_API_KEY: 'auth-secret', CHECKIN_SERVICE_API_KEY: 'service-secret', ENTRADAS_SERVICE_URL: base, PANEL_SERVICE_URL: base, PANEL_FAILURE_POLICY: 'deny', CHECKIN_ALLOWED_ROLES: 'STAFF' });
+  Object.assign(process.env, { AUTH_SERVICE_URL: base, AUTH_INTERNAL_API_KEY: 'auth-secret', ENTRADAS_SERVICE_URL: base, PANEL_SERVICE_URL: base, PANEL_FAILURE_POLICY: 'deny', CHECKIN_ALLOWED_ROLES: 'STAFF' });
   const repositorio = crear_repositorio(':memory:');
   const app = crear_app({ repositorio });
   const servidor = await new Promise(resolve => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
@@ -40,17 +40,17 @@ test('integración HTTP: Auth, Entradas, Panel y contrato de asistencia para Res
     return { status: res.status, body: await res.json() };
   };
   const scan = id => request('/api/v1/checkin/validaciones', { id_entrada: id, id_evento: 'evento' }, { Cookie: 'jwt=staff' });
-  const clave = { 'x-api-key': 'service-secret' };
+  const clave = {}; // Los endpoints entre servicios no requieren API key.
   const alta = async (id, usuario = 'comprador-uuid') => request('/api/v1/checkin/tickets', { id_entrada: id, id_evento: 'evento', nombre_usuario: 'Persona', ...(usuario ? { id_usuario: usuario } : {}), qr_data: { id_entrada: id, id_evento: 'evento' } }, clave);
   try {
-    await t.test('todos los alias exigen autorización, incluida asistencia', async () => {
+    await t.test('validaciones exigen sesión; tickets y asistencia aceptan solicitudes sin API key', async () => {
       for (const prefijo of ['/api/checkin', '/api/v1/checkin']) {
-        assert.equal((await request(prefijo + '/tickets', {})).status, 403);
+        assert.equal((await request(prefijo + '/tickets', {})).status, 400);
         assert.equal((await request(prefijo + '/validaciones', {})).status, 401);
       }
       for (const prefijo of ['/api/checkin', '/api/v1/checkin', '/checkin']) {
-        assert.equal((await request(prefijo + '/asistencia', {})).status, 403);
-        assert.equal((await request(prefijo + '/asistencia?eventoId=evento&usuarioId=comprador-uuid')).status, 403);
+        assert.equal((await request(prefijo + '/asistencia', {})).status, 400);
+        assert.equal((await request(prefijo + '/asistencia?eventoId=evento&usuarioId=comprador-uuid')).status, 200);
       }
     });
     await t.test('QR estructurado, datos reales de Panel y asistencia del comprador', async () => {
