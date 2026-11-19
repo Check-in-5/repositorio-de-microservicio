@@ -1,0 +1,723 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TicketU — Check-in",
+    "version": "0.4.0",
+    "description": "Check-in en plataforma compartida. Instalacion en INSTALACION.md e integraciones en INTEGRACIONES.md. Rutas /api/checkin publicadas en API Gateway."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/checkin/tickets": {
+      "post": {
+        "summary": "Recibir y guardar un ticket desde Entradas",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id_entrada",
+                  "id_evento",
+                  "nombre_usuario"
+                ],
+                "properties": {
+                  "id_entrada": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "tk-998877"
+                  },
+                  "id_evento": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "evt-77889"
+                  },
+                  "nombre_usuario": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "example": "Sebastián Fuentes"
+                  },
+                  "qr_data": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id_entrada",
+                          "id_evento"
+                        ],
+                        "properties": {
+                          "id_entrada": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "id_evento": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          }
+                        }
+                      }
+                    ],
+                    "description": "Debe coincidir con el ticket. Objeto requerido si se omite id_usuario; texto o ausencia compatibles con productores anteriores que proporcionan id_usuario."
+                  },
+                  "id_usuario": {
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "example": "usr-42",
+                    "type": "string"
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "id_usuario"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "qr_data"
+                    ],
+                    "properties": {
+                      "qr_data": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id_entrada",
+                          "id_evento"
+                        ],
+                        "properties": {
+                          "id_entrada": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "id_evento": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ticket registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "mensaje"
+                  ],
+                  "properties": {
+                    "mensaje": {
+                      "type": "string",
+                      "example": "Ticket registrado exitosamente para control de acceso."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o JSON malformado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "TICKET_ALREADY_EXISTS: el ID ya está registrado; no se modifica",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Cuerpo mayor que 16 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno o de base de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Respuesta incompatible de proveedor"
+          },
+          "503": {
+            "description": "Proveedor no disponible o configuración incompleta"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/checkin/validaciones": {
+      "post": {
+        "summary": "Validar ID leído del QR contra la base local",
+        "description": "200 con valido=false para ticket desconocido o de otro evento. No modifica el ticket. Los datos del usuario solo se devuelven si coincide el evento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id_entrada",
+                  "id_evento"
+                ],
+                "properties": {
+                  "id_entrada": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "tk-998877"
+                  },
+                  "id_evento": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "evt-77889"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "valido",
+                        "motivo",
+                        "ticket"
+                      ],
+                      "properties": {
+                        "valido": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "motivo": {
+                          "type": "string",
+                          "enum": [
+                            "TICKET_NOT_FOUND",
+                            "EVENT_MISMATCH",
+                            "TICKET_ALREADY_USED"
+                          ]
+                        },
+                        "ticket": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id_entrada",
+                            "id_evento",
+                            "nombre_usuario"
+                          ],
+                          "properties": {
+                            "id_entrada": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "example": "tk-998877"
+                            },
+                            "id_evento": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "example": "evt-77889"
+                            },
+                            "nombre_usuario": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "example": "Sebastián Fuentes"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "valido",
+                        "motivo"
+                      ],
+                      "properties": {
+                        "valido": {
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
+                        },
+                        "motivo": {
+                          "type": "string",
+                          "enum": [
+                            "TICKET_NOT_FOUND",
+                            "EVENT_MISMATCH"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o JSON malformado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión inválida"
+          },
+          "403": {
+            "description": "Sin permiso"
+          },
+          "409": {
+            "description": "Entrada remota no activa"
+          },
+          "413": {
+            "description": "Cuerpo mayor que 16 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno o de base de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Respuesta incompatible de proveedor"
+          },
+          "503": {
+            "description": "Proveedor no disponible o configuración incompleta"
+          }
+        },
+        "security": [
+          {
+            "sesion": []
+          }
+        ]
+      }
+    },
+    "/api/checkin/eventos/{id_evento}/finalizar": {
+      "post": {
+        "summary": "Finalizar evento y emitir lote de asistencia",
+        "description": "Publica checkin.asistencia_final con confirmación de broker. No cambia estado en Panel ni certifica consumo en Reseñas. No hay consumidor de lotes en Reseñas revisado. Los reintentos pueden duplicar publicaciones.",
+        "parameters": [
+          {
+            "name": "id_evento",
+            "in": "path",
+            "required": true,
+            "description": "Identificador único del evento",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lote emitido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensaje": {
+                      "type": "string"
+                    },
+                    "total_notificados": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Broker sin configurar o publicación no confirmada"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/checkin/tickets": {
+      "$ref": "#/paths/~1api~1checkin~1tickets"
+    },
+    "/api/v1/checkin/validaciones": {
+      "$ref": "#/paths/~1api~1checkin~1validaciones"
+    },
+    "/api/checkin/asistencia": {
+      "get": {
+        "summary": "Consultar asistencia confirmada de comprador y evento",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Asistencia presente o ausente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "asistio"
+                  ],
+                  "properties": {
+                    "asistio": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores inválidos"
+          },
+          "500": {
+            "description": "Error de almacenamiento"
+          }
+        },
+        "description": "Contrato booleano para nuevos consumidores.",
+        "parameters": [
+          {
+            "name": "eventoId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "usuarioId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Consultar asistencia confirmada de comprador y evento",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Asistencia presente o ausente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "asistio"
+                  ],
+                  "properties": {
+                    "asistio": {
+                      "type": "string",
+                      "enum": [
+                        "true",
+                        "false"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identificadores inválidos"
+          },
+          "500": {
+            "description": "Error de almacenamiento"
+          }
+        },
+        "description": "Compatibilidad: asistio es la cadena true o false. El body tiene precedencia sobre query.",
+        "parameters": [
+          {
+            "name": "eventoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "usuarioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "eventoId",
+                  "usuarioId"
+                ],
+                "properties": {
+                  "eventoId": {
+                    "type": "string"
+                  },
+                  "usuarioId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkin/asistencia": {
+      "$ref": "#/paths/~1api~1checkin~1asistencia"
+    },
+    "/checkin/asistencia": {
+      "$ref": "#/paths/~1api~1checkin~1asistencia"
+    },
+    "/api/checkin/health": {
+      "get": {
+        "summary": "Disponibilidad HTTP de Check-in por Gateway (no prueba dependencias)",
+        "responses": {
+          "200": {
+            "description": "Servicio disponible"
+          }
+        }
+      }
+    },
+    "/api/checkin/openapi.json": {
+      "get": {
+        "summary": "Contrato OpenAPI por Gateway",
+        "responses": {
+          "200": {
+            "description": "Especificacion OpenAPI"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sesion": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "jwt"
+      }
+    }
+  }
+}

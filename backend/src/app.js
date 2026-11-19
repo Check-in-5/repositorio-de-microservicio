@@ -1,0 +1,84 @@
+import { randomUUID } from 'node:crypto';
+import { autenticar_personal } from './auth.js';
+import crear_express from 'express';
+import interfaz_swagger from 'swagger-ui-express';
+import { readFileSync as leer_archivo } from 'node:fs';
+import { crear_servicio } from './service.js';
+import { error_api } from './errors.js';
+const especificacion = JSON.parse(leer_archivo(new URL('../docs/openapi.json', import.meta.url), 'utf8'));
+
+export function crear_app({ repositorio, verificar_personal = autenticar_personal }) {
+  const app = crear_express();
+  const servicio = crear_servicio(repositorio);
+  app.disable('x-powered-by');
+  app.use((req, res, next) => {
+    const incoming = req.get('x-request-id');
+    const requestId = incoming && /^[a-zA-Z0-9_-]{1,100}$/.test(incoming) ? incoming : randomUUID();
+    res.set('x-request-id', requestId);
+    if (process.env.TRACE_HTTP === 'true') {
+      const inicio = Date.now();
+      res.on('finish', () => console.log(JSON.stringify({
+        fecha: new Date().toISOString(), servicio: 'checkin', requestId,
+        metodo: req.method, ruta: req.path, estado: res.statusCode, duracion_ms: Date.now() - inicio,
+      })));
+    }
+    next();
+  });
+  app.get(['/health', '/api/checkin/health'], (_solicitud, respuesta) => respuesta.json({ status: 'ok', storage: 'mysql' }));
+  app.get(['/openapi.json', '/api/checkin/openapi.json'], (_solicitud, respuesta) => respuesta.json(especificacion));
+  app.use('/api-docs', interfaz_swagger.serve, interfaz_swagger.setup(especificacion));
+  app.use('/api', (_solicitud, respuesta, continuar) => { respuesta.set('Cache-Control', 'no-store'); continuar(); });
+  app.use(crear_express.json({ limit: '16kb' }));
+  
+  app.post(['/api/checkin/tickets', '/api/v1/checkin/tickets'], async (solicitud, respuesta, continuar) => {
+    try {
+      await servicio.registrar(solicitud.body);
+      respuesta.status(201).json({ mensaje: 'Ticket registrado exitosamente para control de acceso.' });
+    } catch (error) {
+      continuar(error);
+    }
+  });
+  
+  app.post(['/api/checkin/validaciones', '/api/v1/checkin/validaciones'], verificar_personal, async (solicitud, respuesta, continuar) => {
+    try {
+      const resultado = await servicio.validar(solicitud.body, { cookie: solicitud.headers.cookie });
+      respuesta.json(resultado);
+    } catch (error) {
+      continuar(error);
+    }
+  });
+
+  app.post('/api/checkin/eventos/:id_evento/finalizar', async (solicitud, respuesta, continuar) => {
+    try {
+      const cantidad = await servicio.enviar_lote_resenas(solicitud.params.id_evento);
+      respuesta.status(200).json({ 
+        mensaje: 'Lote de asistencia emitido a RabbitMQ', 
+        total_notificados: cantidad 
+      });
+    } catch (error) {
+      continuar(error);
+    }
+  });
+  
+  app.post(['/api/checkin/asistencia', '/api/v1/checkin/asistencia', '/checkin/asistencia'], async (solicitud, respuesta, continuar) => {
+    try { respuesta.json(await servicio.consultar_asistencia(solicitud.body, solicitud.query)); }
+    catch (error) { continuar(error); }
+  });
+
+  app.get(['/api/checkin/asistencia', '/api/v1/checkin/asistencia', '/checkin/asistencia'], async (solicitud, respuesta, continuar) => {
+    try {
+      const resultado = await servicio.consultar_asistencia(undefined, solicitud.query);
+      respuesta.json({ asistio: resultado.asistio === 'true' });
+    } catch (error) { continuar(error); }
+  });
+
+  app.use((_solicitud, _respuesta, continuar) => continuar(new error_api(404, 'ROUTE_NOT_FOUND', 'Ruta no encontrada.')));
+  app.use((error, _solicitud, respuesta, _continuar) => {
+    const estado = error instanceof error_api ? error.estado : error.type === 'entity.parse.failed' ? 400 : error.type === 'entity.too.large' ? 413 : 500;
+    respuesta.status(estado).json({ error: {
+      code: error instanceof error_api ? error.codigo : estado === 400 ? 'INVALID_JSON' : estado === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL_ERROR',
+      message: error instanceof error_api ? error.message : 'No se pudo procesar la solicitud.',
+    } });
+  });
+  return app;
+}

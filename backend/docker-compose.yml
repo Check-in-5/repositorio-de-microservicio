@@ -1,0 +1,68 @@
+services:
+  checkin-service:
+    build: .
+    environment:
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:?Configura AUTH_SERVICE_URL}
+      AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:?Configura AUTH_INTERNAL_API_KEY}
+      CHECKIN_ALLOWED_ROLES: ${CHECKIN_ALLOWED_ROLES:-STAFF}
+      ENTRADAS_SERVICE_URL: ${ENTRADAS_SERVICE_URL:-http://entradas-service:3000}
+      ENTRADAS_API_KEY: ${ENTRADAS_API_KEY:-}
+      PANEL_SERVICE_URL: ${PANEL_SERVICE_URL:-http://organizador-service:3000}
+      PANEL_API_KEY: ${PANEL_API_KEY:-}
+      PANEL_FAILURE_POLICY: ${PANEL_FAILURE_POLICY:-deny}
+      BROKER_URL: ${BROKER_URL:-}
+      EVENT_EXCHANGE: ${EVENT_EXCHANGE:-ticketu.events}
+      HOST: 0.0.0.0
+      PORT: 3005
+      DB_HOST: checkin-db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-checkin_user}
+      DB_PASSWORD: ${DB_PASSWORD:-checkin_password}
+      DB_NAME: checkin_db
+    ports:
+      - "${PORT:-3005}:3005"
+    networks:
+      - plataforma-eventos-net
+      - checkin-interna
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3005/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: checkin_db
+      MYSQL_USER: ${DB_USER:-checkin_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-checkin_password}
+    ports:
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      checkin-interna:
+        aliases:
+          - checkin-db
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=TCP -h 127.0.0.1 -u $$MYSQL_USER $$MYSQL_DATABASE -e 'SELECT 1 FROM ticket LIMIT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  db_data:
+
+networks:
+  plataforma-eventos-net:
+    external: true
+  checkin-interna:
