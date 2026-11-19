@@ -1,0 +1,86 @@
+name: checkin
+
+services:
+  checkin-service:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3005'
+      DB_HOST: checkin-db
+      DB_PORT: '3306'
+      DB_NAME: checkin_db
+      DB_USER: checkin_user
+      DB_PASSWORD: ${DB_PASSWORD:?Configura DB_PASSWORD en .env}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:10000}
+      AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:?Configura la clave de Auth}
+      CHECKIN_ALLOWED_ROLES: STAFF
+      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://ticketu-api-gateway:8080}
+      ENTRADAS_DETAIL_PATH: ${ENTRADAS_DETAIL_PATH:?Configura ENTRADAS_DETAIL_PATH}
+      PANEL_SERVICE_URL: ${PANEL_SERVICE_URL:-http://organizador-service:3000}
+      PANEL_EVENT_PATH: ${PANEL_EVENT_PATH:?Configura PANEL_EVENT_PATH}
+      PANEL_FAILURE_POLICY: deny
+      TRACE_HTTP: 'true'
+      BROKER_URL: ${BROKER_URL:-}
+      EVENT_EXCHANGE: ${EVENT_EXCHANGE:-ticketu.events}
+    ports:
+      - '${CHECKIN_PORT:-3005}:3005'
+    networks:
+      - plataforma-eventos-net
+      - checkin-interna
+    depends_on:
+      checkin-db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3005/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  checkin-db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: checkin_db
+      MYSQL_USER: checkin_user
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Configura DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Configura DB_ROOT_PASSWORD}
+    volumes:
+      - checkin_mysql:/var/lib/mysql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - checkin-interna
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=TCP -h 127.0.0.1 -u $$MYSQL_USER checkin_db -e "SELECT 1 FROM ticket LIMIT 1"']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  checkin-frontend:
+    build: ./frontend
+    profiles: [frontend]
+    restart: unless-stopped
+    environment:
+      APP_ORIGIN: ${APP_ORIGIN:?Configura el origen publico del frontend Check-in}
+      AUTH_SERVICE_URL: ${API_GATEWAY_URL:-http://ticketu-api-gateway:8080}
+      CHECKIN_SERVICE_URL: ${API_GATEWAY_URL:-http://ticketu-api-gateway:8080}
+      CHECKIN_ALLOWED_ROLES: STAFF
+    ports:
+      - '${FRONTEND_PORT:-3015}:3000'
+    networks:
+      - plataforma-eventos-net
+    depends_on:
+      checkin-service:
+        condition: service_healthy
+
+volumes:
+  checkin_mysql:
+
+networks:
+  plataforma-eventos-net:
+    external: true
+  checkin-interna:
+    internal: true

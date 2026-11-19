@@ -24,8 +24,10 @@ async function consultar(base, ruta, clave, servicio, cookie) {
 const texto = (v, max) => typeof v === 'string' && v.length > 0 && v.length <= max && v.trim() === v;
 
 export async function consultar_entrada(id) {
-  if (!process.env.ENTRADAS_SERVICE_URL) return null;
-  const datos = await consultar(process.env.ENTRADAS_SERVICE_URL, `/api/v1/entradas/${encodeURIComponent(id)}/detalle`, process.env.ENTRADAS_API_KEY, 'ENTRADAS');
+  const base = process.env.API_GATEWAY_URL || process.env.ENTRADAS_SERVICE_URL;
+  if (!base) return null;
+  const ruta = (process.env.ENTRADAS_DETAIL_PATH || '/api/v1/entradas/{id}/detalle').replace('{id}', encodeURIComponent(id));
+  const datos = await consultar(base, ruta, process.env.ENTRADAS_API_KEY, 'ENTRADAS');
   if (datos === null) return null;
   const id_remoto = datos?.id_entrada ?? datos?.id_ticket;
   const usuario = datos?.id_usuario ?? datos?.usuario?.id_usuario;
@@ -40,7 +42,7 @@ export async function consultar_evento(id, cookie) {
   if (!process.env.PANEL_SERVICE_URL) return null;
   let datos;
   try {
-    datos = await consultar(process.env.PANEL_SERVICE_URL, `/api/v1/panel/eventos/${encodeURIComponent(id)}`, process.env.PANEL_API_KEY, 'PANEL', cookie);
+    datos = await consultar(process.env.PANEL_SERVICE_URL, (process.env.PANEL_EVENT_PATH || '/api/v1/panel/eventos/{id}').replace('{id}', encodeURIComponent(id)), process.env.PANEL_API_KEY, 'PANEL', cookie);
   } catch (error) {
     // Modo autónomo del contrato Panel, únicamente si el despliegue lo habilita explícitamente.
     if (error.estado === 503 && process.env.PANEL_FAILURE_POLICY === 'allow') return null;

@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "TicketU — Check-in",
-    "version": "0.3.0",
-    "description": "Check-in: Auth, Entradas, Panel y asistencia para Reseñas. Ver docs/integracion-completa.md para configuración y pendientes externos."
+    "version": "0.4.0",
+    "description": "Check-in en plataforma compartida. Instalacion en INSTALACION.md e integraciones en INTEGRACIONES.md. Rutas /api/checkin publicadas en API Gateway."
   },
   "servers": [
     {
@@ -689,6 +689,26 @@
     },
     "/checkin/asistencia": {
       "$ref": "#/paths/~1api~1checkin~1asistencia"
+    },
+    "/api/checkin/health": {
+      "get": {
+        "summary": "Disponibilidad HTTP de Check-in por Gateway (no prueba dependencias)",
+        "responses": {
+          "200": {
+            "description": "Servicio disponible"
+          }
+        }
+      }
+    },
+    "/api/checkin/openapi.json": {
+      "get": {
+        "summary": "Contrato OpenAPI por Gateway",
+        "responses": {
+          "200": {
+            "description": "Especificacion OpenAPI"
+          }
+        }
+      }
     }
   },
   "components": {

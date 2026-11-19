@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { autenticar_personal } from './auth.js';
 import crear_express from 'express';
 import interfaz_swagger from 'swagger-ui-express';
@@ -10,8 +11,21 @@ export function crear_app({ repositorio, verificar_personal = autenticar_persona
   const app = crear_express();
   const servicio = crear_servicio(repositorio);
   app.disable('x-powered-by');
-  app.get('/health', (_solicitud, respuesta) => respuesta.json({ status: 'ok', storage: 'mysql' }));
-  app.get('/openapi.json', (_solicitud, respuesta) => respuesta.json(especificacion));
+  app.use((req, res, next) => {
+    const incoming = req.get('x-request-id');
+    const requestId = incoming && /^[a-zA-Z0-9_-]{1,100}$/.test(incoming) ? incoming : randomUUID();
+    res.set('x-request-id', requestId);
+    if (process.env.TRACE_HTTP === 'true') {
+      const inicio = Date.now();
+      res.on('finish', () => console.log(JSON.stringify({
+        fecha: new Date().toISOString(), servicio: 'checkin', requestId,
+        metodo: req.method, ruta: req.path, estado: res.statusCode, duracion_ms: Date.now() - inicio,
+      })));
+    }
+    next();
+  });
+  app.get(['/health', '/api/checkin/health'], (_solicitud, respuesta) => respuesta.json({ status: 'ok', storage: 'mysql' }));
+  app.get(['/openapi.json', '/api/checkin/openapi.json'], (_solicitud, respuesta) => respuesta.json(especificacion));
   app.use('/api-docs', interfaz_swagger.serve, interfaz_swagger.setup(especificacion));
   app.use('/api', (_solicitud, respuesta, continuar) => { respuesta.set('Cache-Control', 'no-store'); continuar(); });
   app.use(crear_express.json({ limit: '16kb' }));
