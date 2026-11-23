@@ -53,7 +53,7 @@ Iniciar sesión STAFF -> obtener ticket emitido por Entradas -> escanear o ingre
 |---|---|---|
 | AU1 | Sesión real y autorización STAFF; rechazos sin cookie, token inválido y rol distinto | Ejecución con usuarios de Auth en workstation |
 | GW1 | Tickets recibidos por Gateway, trazas y consultas SQL; consulta de respaldo por Gateway | Emitir desde Entradas instalado y comprobar las trazas de ambas llamadas |
-| BR1 | Publicador heredado conservado; no se amplía por decisión de alcance solicitada | No acreditado; sin exención docente confirmada ni evidencia de consumo |
+| BR1 | Publicador heredado conservado; no se amplía por decisión de alcance solicitada | No corresponde para nuestro servicio |
 
 La pauta incluye **tres tipos** de integración. La decisión de no ampliar el broker no lo elimina de la rúbrica. Este README no presenta BR1 como logrado ni sustituye la revisión en workstation.
 
